@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import RoleSelect from "./pages/RoleSelect";
 import Login from "./pages/Login";
+import PoliceLogin from "./pages/PoliceLogin";
 import RelativeRegister from "./pages/RelativeRegister";
 import RelativeDashboard from "./pages/RelativeDashboard";
 import PoliceDashboard from "./pages/PoliceDashboard";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/role-select" element={<RoleSelect />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/police-login" element={<PoliceLogin />} />
             <Route path="/relative-register" element={<RelativeRegister />} />
             <Route path="/relative-dashboard" element={
               <ProtectedRoute>
