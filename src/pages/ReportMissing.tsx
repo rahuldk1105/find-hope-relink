@@ -14,6 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import LocationPicker from "@/components/LocationPicker";
 import PhotoUpload from "@/components/PhotoUpload";
 
+type GenderType = "male" | "female" | "other";
+type StatusType = "missing" | "found";
+
 const ReportMissing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,9 +25,13 @@ const ReportMissing = () => {
   const [formData, setFormData] = useState({
     name: "",
     age: "",
-    gender: "",
+    gender: "" as GenderType,
     healthConditions: "",
-    lastSeenLocation: { address: "", lat: undefined as number | undefined, lng: undefined as number | undefined },
+    lastSeenLocation: { 
+      address: "", 
+      lat: undefined as number | undefined, 
+      lng: undefined as number | undefined 
+    },
     description: "",
     photos: [] as File[]
   });
@@ -73,21 +80,21 @@ const ReportMissing = () => {
       const photoUrls = await uploadPhotos(formData.photos);
       const primaryPhotoUrl = photoUrls[0] || '';
 
-      // Insert missing person record
+      // Insert missing person record - fix: pass single object, not array
       const { data, error } = await supabase
         .from('missing_persons')
-        .insert([{
+        .insert({
           reporter_id: user.id,
           name: formData.name,
           age: parseInt(formData.age),
-          gender: formData.gender,
+          gender: formData.gender as GenderType,
           health_conditions: formData.healthConditions,
           last_seen_location: formData.lastSeenLocation.address,
           last_seen_lat: formData.lastSeenLocation.lat,
           last_seen_lng: formData.lastSeenLocation.lng,
           photo_url: primaryPhotoUrl,
-          status: 'missing'
-        }])
+          status: 'missing' as StatusType
+        })
         .select()
         .single();
 
@@ -174,7 +181,7 @@ const ReportMissing = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender *</Label>
-                  <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
+                  <Select value={formData.gender} onValueChange={(value: GenderType) => handleInputChange("gender", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
