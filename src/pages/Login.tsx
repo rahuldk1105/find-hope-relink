@@ -8,10 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -21,25 +24,41 @@ const Login = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Mock authentication - in real app this would use Supabase auth
-    console.log("Login attempt:", formData);
-    
-    // Simulate different user types
-    if (formData.email.includes("police")) {
+    setLoading(true);
+
+    try {
+      const { error } = await signIn(formData.email, formData.password);
+      
+      if (error) {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
       toast({
-        title: "Welcome back, Officer",
-        description: "Successfully signed in to police dashboard.",
+        title: "Login Successful",
+        description: "Welcome back to ReLink"
       });
-      navigate('/police-dashboard');
-    } else {
+      
+      // Check if user is police or relative based on email
+      if (formData.email.includes("police")) {
+        navigate('/police-dashboard');
+      } else {
+        navigate('/relative-dashboard');
+      }
+    } catch (error: any) {
       toast({
-        title: "Welcome back",
-        description: "Successfully signed in to your account.",
+        title: "Login Failed",
+        description: "An unexpected error occurred",
+        variant: "destructive"
       });
-      navigate('/relative-dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,8 +124,9 @@ const Login = () => {
               <Button 
                 type="submit"
                 className="w-full bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700"
+                disabled={loading}
               >
-                Sign In
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
@@ -127,8 +147,8 @@ const Login = () => {
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
               <p className="text-sm font-medium text-blue-800 mb-2">Demo Credentials:</p>
               <div className="space-y-1 text-xs text-blue-700">
-                <p><Badge variant="outline" className="text-xs mr-2">Relative</Badge>family@demo.com</p>
-                <p><Badge variant="outline" className="text-xs mr-2">Police</Badge>police@demo.com</p>
+                <div><Badge variant="outline" className="text-xs mr-2">Relative</Badge>family@demo.com</div>
+                <div><Badge variant="outline" className="text-xs mr-2">Police</Badge>police@demo.com</div>
                 <p className="text-blue-600">Password: demo123</p>
               </div>
             </div>
