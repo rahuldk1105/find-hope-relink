@@ -6,46 +6,109 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Upload, User } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import LocationPicker from "@/components/LocationPicker";
+import PhotoUpload from "@/components/PhotoUpload";
 
 const ReportMissing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     age: "",
     gender: "",
     healthConditions: "",
-    lastSeenLocation: "",
+    lastSeenLocation: { address: "", lat: undefined as number | undefined, lng: undefined as number | undefined },
     description: "",
-    photo: null as File | null
+    photos: [] as File[]
   });
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, photo: file }));
-    }
+  const uploadPhotos = async (photos: File[]): Promise<string[]> => {
+    const uploadPromises = photos.map(async (photo, index) => {
+      const fileExt = photo.name.split('.').pop();
+      const fileName = `${user?.id}-${Date.now()}-${index}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('missing-person-photos')
+        .upload(fileName, photo);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('missing-person-photos')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    });
+
+    return Promise.all(uploadPromises);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In real app, this would save to Supabase database
-    console.log("Form submitted:", formData);
     
-    toast({
-      title: "Report Submitted Successfully",
-      description: "Your missing person report has been filed and law enforcement has been notified.",
-    });
-    
-    // Redirect to dashboard
-    navigate('/relative-dashboard');
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit a report.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Upload photos first
+      const photoUrls = await uploadPhotos(formData.photos);
+      const primaryPhotoUrl = photoUrls[0] || '';
+
+      // Insert missing person record
+      const { data, error } = await supabase
+        .from('missing_persons')
+        .insert([{
+          reporter_id: user.id,
+          name: formData.name,
+          age: parseInt(formData.age),
+          gender: formData.gender,
+          health_conditions: formData.healthConditions,
+          last_seen_location: formData.lastSeenLocation.address,
+          last_seen_lat: formData.lastSeenLocation.lat,
+          last_seen_lng: formData.lastSeenLocation.lng,
+          photo_url: primaryPhotoUrl,
+          status: 'missing'
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Report Submitted Successfully",
+        description: "Your missing person report has been filed and law enforcement has been notified.",
+      });
+      
+      navigate('/relative-dashboard');
+    } catch (error: any) {
+      console.error('Error submitting report:', error);
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit report. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -126,47 +189,20 @@ const ReportMissing = () => {
 
               {/* Photo Upload */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Photo</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="photo">Recent Photo *</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <div className="space-y-2">
-                      <Label htmlFor="photo" className="cursor-pointer text-blue-600 hover:text-blue-700">
-                        Click to upload a photo
-                      </Label>
-                      <Input
-                        id="photo"
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                        required
-                      />
-                      <p className="text-sm text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                    </div>
-                    {formData.photo && (
-                      <p className="text-sm text-green-600 mt-2">
-                        Photo selected: {formData.photo.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Photos</h3>
+                <PhotoUpload 
+                  photos={formData.photos}
+                  onPhotosChange={(photos) => setFormData(prev => ({ ...prev, photos }))}
+                />
               </div>
 
               {/* Location Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Last Known Location</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Last Seen Location *</Label>
-                  <Input
-                    id="location"
-                    value={formData.lastSeenLocation}
-                    onChange={(e) => handleInputChange("lastSeenLocation", e.target.value)}
-                    placeholder="e.g., Downtown Portland, near Powell's Books"
-                    required
-                  />
-                </div>
+                <LocationPicker
+                  value={formData.lastSeenLocation}
+                  onLocationChange={(location) => setFormData(prev => ({ ...prev, lastSeenLocation: location }))}
+                />
               </div>
 
               {/* Additional Information */}
@@ -207,9 +243,10 @@ const ReportMissing = () => {
                 </Button>
                 <Button 
                   type="submit"
+                  disabled={loading}
                   className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700"
                 >
-                  Submit Report
+                  {loading ? "Submitting..." : "Submit Report"}
                 </Button>
               </div>
             </form>
