@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 
 interface LocationPickerProps {
-  onLocationChange: (location: { address: string; lat?: number; lng?: number }) => void;
-  value: { address: string; lat?: number; lng?: number };
+  onLocationChange: (location: { address: string; lat: number | undefined; lng: number | undefined }) => void;
+  value: { address: string; lat: number | undefined; lng: number | undefined };
 }
 
 const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationChange, value }) => {
@@ -41,7 +41,11 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationChange, value
         <Input
           id="lastSeenLocation"
           value={value.address}
-          onChange={(e) => onLocationChange({ ...value, address: e.target.value })}
+          onChange={(e) => onLocationChange({ 
+            address: e.target.value, 
+            lat: value.lat, 
+            lng: value.lng 
+          })}
           placeholder="e.g., Downtown Portland, near Powell's Books"
           required
         />
