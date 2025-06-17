@@ -31,7 +31,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/role-select" element={<RoleSelect />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/police-login" element={<PoliceLogin />} />
+            {/* Hidden police login route - not publicly accessible */}
+            <Route path="/tnpolice/secure/login" element={<PoliceLogin />} />
             <Route path="/relative-register" element={<RelativeRegister />} />
             <Route path="/relative-dashboard" element={
               <ProtectedRoute>

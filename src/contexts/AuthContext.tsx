@@ -48,13 +48,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
-    const redirectUrl = `${window.location.origin}/relative-dashboard`;
-    
-    const { error } = await supabase.auth.signUp({
+    // Sign up without email verification
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: {
           name,
           phone,
@@ -63,11 +61,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    if (!error) {
-      // Create user profile
+    if (!error && data.user) {
+      // Create user profile immediately since no email verification is required
       const { error: profileError } = await supabase
         .from('users')
         .insert([{
+          id: data.user.id,
           name,
           email,
           phone,
