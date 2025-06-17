@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Scan, Map, LogOut, Activity } from "lucide-react";
+import { Shield, Users, Scan, Map, LogOut, Activity, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -79,7 +79,7 @@ const PoliceDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <Activity className="w-4 h-4" />
               <span>Overview</span>
@@ -95,6 +95,10 @@ const PoliceDashboard = () => {
             <TabsTrigger value="map" className="flex items-center space-x-2">
               <Map className="w-4 h-4" />
               <span>Map View</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4" />
+              <span>Analytics</span>
             </TabsTrigger>
           </TabsList>
 
@@ -142,7 +146,7 @@ const PoliceDashboard = () => {
                 <CardDescription>Common police dashboard actions</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <Button
                     onClick={() => setActiveTab("scan")}
                     className="h-24 flex flex-col items-center justify-center space-y-2 bg-blue-600 hover:bg-blue-700"
@@ -166,6 +170,14 @@ const PoliceDashboard = () => {
                     <Map className="w-6 h-6" />
                     <span>View Map</span>
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/analytics-dashboard')}
+                    className="h-24 flex flex-col items-center justify-center space-y-2 border-orange-200 hover:bg-orange-50"
+                  >
+                    <TrendingUp className="w-6 h-6 text-orange-600" />
+                    <span>Analytics Dashboard</span>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -181,6 +193,35 @@ const PoliceDashboard = () => {
 
           <TabsContent value="map">
             <MissingPersonsMap />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="w-5 h-5" />
+                  <span>Advanced Analytics</span>
+                </CardTitle>
+                <CardDescription>
+                  Comprehensive analytics and heatmap visualization
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <TrendingUp className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Advanced Analytics Dashboard</h3>
+                  <p className="text-gray-600 mb-6">
+                    Access comprehensive analytics with heatmap visualization, filters, and export capabilities.
+                  </p>
+                  <Button
+                    onClick={() => navigate('/analytics-dashboard')}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  >
+                    Open Analytics Dashboard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

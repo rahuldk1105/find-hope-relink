@@ -14,6 +14,7 @@ import PoliceLogin from "./pages/PoliceLogin";
 import RelativeRegister from "./pages/RelativeRegister";
 import RelativeDashboard from "./pages/RelativeDashboard";
 import PoliceDashboard from "./pages/PoliceDashboard";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ReportMissing from "./pages/ReportMissing";
 import MyReports from "./pages/MyReports";
 
@@ -40,6 +41,11 @@ const App = () => (
             <Route path="/police-dashboard" element={
               <ProtectedRoute>
                 <PoliceDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics-dashboard" element={
+              <ProtectedRoute>
+                <AnalyticsDashboard />
               </ProtectedRoute>
             } />
             <Route path="/report-missing" element={
