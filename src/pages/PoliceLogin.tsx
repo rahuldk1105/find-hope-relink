@@ -7,12 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Shield, AlertCircle, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 
 const PoliceLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -36,16 +34,13 @@ const PoliceLogin = () => {
     try {
       // Check if credentials match the specialized police access
       if (formData.email === POLICE_CREDENTIALS.email && formData.password === POLICE_CREDENTIALS.password) {
-        // For demo purposes, sign in with a placeholder account
-        // In production, this would be handled differently
-        const { error } = await signIn("police@tnpolice.gov.in", "demo123");
-        
-        if (error) {
-          toast({
-            title: "Access Granted",
-            description: "Welcome to Tamil Nadu Police Dashboard",
-          });
-        }
+        // Store police session in localStorage for demo purposes
+        localStorage.setItem('police_authenticated', 'true');
+        localStorage.setItem('police_session', JSON.stringify({
+          email: formData.email,
+          role: 'police',
+          loginTime: new Date().toISOString()
+        }));
 
         toast({
           title: "Police Access Authorized",

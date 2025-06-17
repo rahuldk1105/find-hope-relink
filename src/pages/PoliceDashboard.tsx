@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Scan, Map, LogOut, Activity, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MissingPersonsList from "@/components/MissingPersonsList";
@@ -15,8 +14,10 @@ import MissingPersonsMap from "@/components/MissingPersonsMap";
 
 const PoliceDashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Get police session info
+  const policeSession = JSON.parse(localStorage.getItem('police_session') || '{}');
 
   // Fetch dashboard statistics
   const { data: stats } = useQuery({
@@ -39,9 +40,11 @@ const PoliceDashboard = () => {
     }
   });
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
+  const handleSignOut = () => {
+    // Clear police session
+    localStorage.removeItem('police_authenticated');
+    localStorage.removeItem('police_session');
+    navigate('/tnpolice/secure/login');
   };
 
   return (
@@ -61,7 +64,7 @@ const PoliceDashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Badge variant="outline" className="hidden sm:flex">
-                Officer: {user?.email}
+                Officer: {policeSession.email || 'Tamil Nadu Police'}
               </Badge>
               <Button
                 variant="outline"

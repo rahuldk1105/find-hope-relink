@@ -45,12 +45,8 @@ const Login = () => {
         description: "Welcome back to ReLink"
       });
       
-      // Check if user is police or relative based on email
-      if (formData.email.includes("police")) {
-        navigate('/police-dashboard');
-      } else {
-        navigate('/relative-dashboard');
-      }
+      // All regular logins go to relative dashboard
+      navigate('/relative-dashboard');
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -84,7 +80,7 @@ const Login = () => {
             </h1>
           </div>
           <p className="text-gray-600">
-            Sign in to your account
+            Sign in to your citizen account
           </p>
         </div>
 
@@ -147,8 +143,7 @@ const Login = () => {
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
               <p className="text-sm font-medium text-blue-800 mb-2">Demo Credentials:</p>
               <div className="space-y-1 text-xs text-blue-700">
-                <div><Badge variant="outline" className="text-xs mr-2">Relative</Badge>family@demo.com</div>
-                <div><Badge variant="outline" className="text-xs mr-2">Police</Badge>police@demo.com</div>
+                <div><Badge variant="outline" className="text-xs mr-2">Citizen</Badge>family@demo.com</div>
                 <p className="text-blue-600">Password: demo123</p>
               </div>
             </div>
