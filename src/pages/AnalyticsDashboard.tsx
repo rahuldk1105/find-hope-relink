@@ -13,6 +13,7 @@ import AnalyticsMap from "@/components/AnalyticsMap";
 import AnalyticsFilters from "@/components/AnalyticsFilters";
 import AnalyticsCards from "@/components/AnalyticsCards";
 import ExportControls from "@/components/ExportControls";
+import type { Database } from "@/integrations/supabase/types";
 
 interface MissingPerson {
   id: string;
@@ -37,6 +38,9 @@ interface FilterState {
   };
 }
 
+type PersonGender = Database['public']['Enums']['person_gender'];
+type PersonStatus = Database['public']['Enums']['person_status'];
+
 const AnalyticsDashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -58,13 +62,13 @@ const AnalyticsDashboard = () => {
         .from('missing_persons')
         .select('*');
 
-      // Apply filters
+      // Apply filters with proper type casting
       if (filters.gender !== "all") {
-        query = query.eq('gender', filters.gender);
+        query = query.eq('gender', filters.gender as PersonGender);
       }
       
       if (filters.status !== "all") {
-        query = query.eq('status', filters.status);
+        query = query.eq('status', filters.status as PersonStatus);
       }
 
       if (filters.dateRange.from) {
