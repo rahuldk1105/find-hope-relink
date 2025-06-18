@@ -10,9 +10,11 @@ import { ArrowLeft, User, Shield, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import LocationPicker from "@/components/LocationPicker";
 import PhotoUpload from "@/components/PhotoUpload";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type GenderType = "male" | "female" | "other";
 type StatusType = "missing" | "found";
@@ -21,6 +23,7 @@ const ReportMissing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -49,7 +52,10 @@ const ReportMissing = () => {
         .from('missing-person-photos')
         .upload(fileName, photo);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Photo upload error:', error);
+        throw error;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('missing-person-photos')
@@ -64,10 +70,12 @@ const ReportMissing = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submission started', { user, formData });
+    
     if (!user) {
       toast({
-        title: "அங்கீகாரம் தேவை | Authentication Required",
-        description: "அறிக்கை சமர்பிக்க உள்நுழையுங்கள்.",
+        title: t('auth.required'),
+        description: t('login.to.submit'),
         variant: "destructive"
       });
       return;
@@ -75,8 +83,8 @@ const ReportMissing = () => {
 
     if (!formData.name || !formData.age || !formData.gender || !formData.lastSeenLocation.address) {
       toast({
-        title: "தேவையான புலங்கள் | Required Fields",
-        description: "அனைத்து அவசியமான புலங்களையும் நிரப்பவும்.",
+        title: t('required.fields'),
+        description: t('fill.all.required'),
         variant: "destructive"
       });
       return;
@@ -85,25 +93,32 @@ const ReportMissing = () => {
     setLoading(true);
 
     try {
+      console.log('Starting photo upload...');
       // Upload photos first
       const photoUrls = formData.photos.length > 0 ? await uploadPhotos(formData.photos) : [];
       const primaryPhotoUrl = photoUrls[0] || null;
+      console.log('Photos uploaded:', photoUrls);
 
       // Insert missing person record
+      console.log('Inserting missing person record...');
+      const insertData = {
+        reporter_id: user.id,
+        name: formData.name.trim(),
+        age: parseInt(formData.age),
+        gender: formData.gender as GenderType,
+        health_conditions: formData.healthConditions.trim() || null,
+        last_seen_location: formData.lastSeenLocation.address.trim(),
+        last_seen_lat: formData.lastSeenLocation.lat,
+        last_seen_lng: formData.lastSeenLocation.lng,
+        photo_url: primaryPhotoUrl,
+        status: 'missing' as StatusType
+      };
+      
+      console.log('Data to insert:', insertData);
+
       const { data, error } = await supabase
         .from('missing_persons')
-        .insert({
-          reporter_id: user.id,
-          name: formData.name.trim(),
-          age: parseInt(formData.age),
-          gender: formData.gender as GenderType,
-          health_conditions: formData.healthConditions.trim() || null,
-          last_seen_location: formData.lastSeenLocation.address.trim(),
-          last_seen_lat: formData.lastSeenLocation.lat,
-          last_seen_lng: formData.lastSeenLocation.lng,
-          photo_url: primaryPhotoUrl,
-          status: 'missing' as StatusType
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -112,17 +127,19 @@ const ReportMissing = () => {
         throw error;
       }
 
+      console.log('Successfully inserted:', data);
+
       toast({
-        title: "அறிக்கை வெற்றிகரமாக சமர்பிக்கப்பட்டது | Report Submitted Successfully",
-        description: "உங்கள் காணாமல்போனோர் அறிக்கை பதிவு செய்யப்பட்டு சட்ட அமலாக்கத்திற்கு அறிவிக்கப்பட்டது.",
+        title: t('report.submitted.success'),
+        description: t('report.registered'),
       });
       
       navigate('/relative-dashboard');
     } catch (error: any) {
       console.error('Error submitting report:', error);
       toast({
-        title: "சமர்பிப்பு தோல்வி | Submission Failed",
-        description: error.message || "அறிக்கை சமர்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+        title: t('submission.failed'),
+        description: error.message || t('could.not.submit'),
         variant: "destructive"
       });
     } finally {
@@ -135,18 +152,21 @@ const ReportMissing = () => {
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-sm border-b-4 border-orange-500 sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center space-x-3">
-            <Button variant="ghost" onClick={() => navigate('/relative-dashboard')} className="hover:bg-orange-50">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              டாஷ்போர்டுக்கு திரும்பு
-            </Button>
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-              <User className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Button variant="ghost" onClick={() => navigate('/relative-dashboard')} className="hover:bg-orange-50">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                {t('back.to.dashboard')}
+              </Button>
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-800">{t('report.missing.person')}</h1>
+                <p className="text-sm text-gray-600">{t('provide.detailed.info')}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">காணாமல்போனவரை அறிவிக்கவும்</h1>
-              <p className="text-sm text-gray-600">உங்கள் அன்புக்குரியவரைக் கண்டுபிடிக்க விரிவான தகவல்களை வழங்கவும்</p>
-            </div>
+            <LanguageSwitcher />
           </div>
         </div>
       </header>
@@ -158,10 +178,9 @@ const ReportMissing = () => {
             <div className="flex items-start space-x-3">
               <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-orange-800 mb-1">முக்கியமான அறிவிப்பு</h3>
+                <h3 className="font-semibold text-orange-800 mb-1">{t('important.notice')}</h3>
                 <p className="text-sm text-orange-700">
-                  முதல் 72 மணிநேரம் மிக முக்கியம். விரைவாக மற்றும் துல்லியமான தகவல்களை வழங்குவது 
-                  உங்கள் அன்புக்குரியவரைக் கண்டுபிடிக்க உதவும்.
+                  {t('first.72.hours')}
                 </p>
               </div>
             </div>
@@ -170,10 +189,9 @@ const ReportMissing = () => {
 
         <Card className="shadow-lg border-orange-200">
           <CardHeader className="bg-gradient-to-r from-orange-100 to-red-100">
-            <CardTitle className="text-2xl text-orange-700">காணாமல்போனோர் அறிக்கை</CardTitle>
+            <CardTitle className="text-2xl text-orange-700">{t('missing.person.report')}</CardTitle>
             <CardDescription>
-              தேடல் நடவடிக்கைகளில் உதவ முடிந்தவரை விரிவான தகவல்களை வழங்கவும். 
-              இந்த தகவல் சட்ட அமலாக்கத்துடன் பகிரப்படும்.
+              {t('provide.comprehensive.info')}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -182,24 +200,24 @@ const ReportMissing = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800 border-b-2 border-orange-200 pb-2 flex items-center">
                   <Shield className="w-5 h-5 mr-2 text-orange-600" />
-                  தனிப்பட்ட தகவல்கள்
+                  {t('personal.information')}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-gray-700">முழுப் பெயர் *</Label>
+                    <Label htmlFor="name" className="text-gray-700">{t('full.name')} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
-                      placeholder="முழுப் பெயரை உள்ளிடுங்கள்"
+                      placeholder={t('enter.full.name')}
                       required
                       className="border-orange-200 focus:border-orange-400"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="age" className="text-gray-700">வயது *</Label>
+                    <Label htmlFor="age" className="text-gray-700">{t('age')} *</Label>
                     <Input
                       id="age"
                       type="number"
@@ -207,7 +225,7 @@ const ReportMissing = () => {
                       max="120"
                       value={formData.age}
                       onChange={(e) => handleInputChange("age", e.target.value)}
-                      placeholder="வயதை உள்ளிடுங்கள்"
+                      placeholder={t('enter.age')}
                       required
                       className="border-orange-200 focus:border-orange-400"
                     />
@@ -215,15 +233,15 @@ const ReportMissing = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="gender" className="text-gray-700">பாலினம் *</Label>
+                  <Label htmlFor="gender" className="text-gray-700">{t('gender')} *</Label>
                   <Select value={formData.gender} onValueChange={(value: GenderType) => handleInputChange("gender", value)}>
                     <SelectTrigger className="border-orange-200 focus:border-orange-400">
-                      <SelectValue placeholder="பாலினத்தை தேர்ந்தெடுக்கவும்" />
+                      <SelectValue placeholder={t('select.gender')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">ஆண்</SelectItem>
-                      <SelectItem value="female">பெண்</SelectItem>
-                      <SelectItem value="other">மற்றவை</SelectItem>
+                      <SelectItem value="male">{t('male')}</SelectItem>
+                      <SelectItem value="female">{t('female')}</SelectItem>
+                      <SelectItem value="other">{t('other')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -231,7 +249,7 @@ const ReportMissing = () => {
 
               {/* Photo Upload */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b-2 border-orange-200 pb-2">புகைப்படங்கள்</h3>
+                <h3 className="text-lg font-semibold text-gray-800 border-b-2 border-orange-200 pb-2">{t('photos')}</h3>
                 <PhotoUpload 
                   photos={formData.photos}
                   onPhotosChange={(photos) => setFormData(prev => ({ ...prev, photos }))}
@@ -240,7 +258,7 @@ const ReportMissing = () => {
 
               {/* Location Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b-2 border-orange-200 pb-2">கடைசியாக தெரிந்த இடம்</h3>
+                <h3 className="text-lg font-semibold text-gray-800 border-b-2 border-orange-200 pb-2">{t('last.known.location')}</h3>
                 <LocationPicker
                   value={formData.lastSeenLocation}
                   onLocationChange={(location) => setFormData(prev => ({ ...prev, lastSeenLocation: location }))}
@@ -249,26 +267,26 @@ const ReportMissing = () => {
 
               {/* Additional Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b-2 border-orange-200 pb-2">கூடுதல் தகவல்கள்</h3>
+                <h3 className="text-lg font-semibold text-gray-800 border-b-2 border-orange-200 pb-2">{t('additional.information')}</h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="health" className="text-gray-700">உடல்நிலை விவரங்கள்</Label>
+                  <Label htmlFor="health" className="text-gray-700">{t('health.conditions')}</Label>
                   <Textarea
                     id="health"
                     value={formData.healthConditions}
                     onChange={(e) => handleInputChange("healthConditions", e.target.value)}
-                    placeholder="ஏதேனும் மருத்துவ நிலைமைகள், மருந்துகள், அல்லது தொடர்புடைய உடல்நிலை பிரச்சினைகள்..."
+                    placeholder={t('health.conditions.placeholder')}
                     className="min-h-20 border-orange-200 focus:border-orange-400"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-gray-700">கூடுதல் விவரம்</Label>
+                  <Label htmlFor="description" className="text-gray-700">{t('additional.description')}</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleInputChange("description", e.target.value)}
-                    placeholder="உடல் அமைப்பு, கடைசியாக அணிந்திருந்த உடை, காணாமல்போன சூழ்நிலைகள், மற்றும் பிற தொடர்புடைய விவரங்கள்..."
+                    placeholder={t('description.placeholder')}
                     className="min-h-32 border-orange-200 focus:border-orange-400"
                   />
                 </div>
@@ -282,14 +300,14 @@ const ReportMissing = () => {
                   onClick={() => navigate('/relative-dashboard')}
                   className="border-orange-300 hover:bg-orange-50"
                 >
-                  ரத்து செய்
+                  {t('cancel')}
                 </Button>
                 <Button 
                   type="submit"
                   disabled={loading}
                   className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 px-8"
                 >
-                  {loading ? "சமர்பிக்கிறது..." : "அறிக்கை சமர்பிக்கவும்"}
+                  {loading ? t('submitting') : t('submit.report')}
                 </Button>
               </div>
             </form>

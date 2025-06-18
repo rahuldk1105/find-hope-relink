@@ -9,11 +9,14 @@ import { ArrowLeft, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -33,7 +36,7 @@ const Login = () => {
       
       if (error) {
         toast({
-          title: "உள்நுழைவு தோல்வி | Login Failed",
+          title: t('login.failed'),
           description: error.message,
           variant: "destructive"
         });
@@ -41,15 +44,15 @@ const Login = () => {
       }
 
       toast({
-        title: "உள்நுழைவு வெற்றி | Login Successful",
-        description: "ReLink உக்கு வருக"
+        title: t('login.successful'),
+        description: t('welcome.to.relink')
       });
       
       navigate('/relative-dashboard');
     } catch (error: any) {
       toast({
-        title: "உள்நுழைவு தோல்வி | Login Failed",
-        description: "எதிர்பாராத பிழை ஏற்பட்டது",
+        title: t('login.failed'),
+        description: "Unexpected error occurred",
         variant: "destructive"
       });
     } finally {
@@ -60,16 +63,19 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="flex justify-between items-center mb-8">
           <Button 
             variant="ghost" 
             onClick={() => navigate('/')}
-            className="mb-6 text-gray-600 hover:text-gray-800"
+            className="text-gray-600 hover:text-gray-800"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            முகப்புக்கு திரும்பு
+            Back to Home
           </Button>
-          
+          <LanguageSwitcher />
+        </div>
+        
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
               <Heart className="w-7 h-7 text-white" />
@@ -79,40 +85,40 @@ const Login = () => {
             </h1>
           </div>
           <p className="text-gray-600">
-            உங்கள் குடிமக்கள் கணக்கில் உள்நுழையுங்கள்
+            Sign in to your citizen account
           </p>
         </div>
 
         <Card className="border-orange-200 shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl text-gray-800">மீண்டும் வருக</CardTitle>
+            <CardTitle className="text-xl text-gray-800">{t('welcome.back')}</CardTitle>
             <CardDescription>
-              உங்கள் டாஷ்போர்டை அணுக உங்கள் விவரங்களை உள்ளிடுங்கள்
+              {t('enter.details')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">மின்னஞ்சல் முகவரி</Label>
+                <Label htmlFor="email">{t('email.address')}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="உங்கள் மின்னஞ்சலை உள்ளிடுங்கள்"
+                  placeholder={t('enter.email')}
                   required
                   className="border-orange-200 focus:border-orange-400"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">கடவுச்சொல்</Label>
+                <Label htmlFor="password">{t('password')}</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  placeholder="உங்கள் கடவுச்சொல்லை உள்ளிடுங்கள்"
+                  placeholder={t('enter.password')}
                   required
                   className="border-orange-200 focus:border-orange-400"
                 />
@@ -123,29 +129,29 @@ const Login = () => {
                 className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
                 disabled={loading}
               >
-                {loading ? "உள்நுழைகிறது..." : "உள்நுழைவு"}
+                {loading ? t('logging.in') : t('login')}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600 mb-4">
-                கணக்கு இல்லையா?
+                {t('no.account')}
               </p>
               <Button 
                 variant="outline" 
                 onClick={() => navigate('/role-select')}
                 className="w-full border-orange-200 hover:bg-orange-50"
               >
-                புதிய கணக்கை உருவாக்கு
+                {t('create.new.account')}
               </Button>
             </div>
 
             {/* Demo Credentials */}
             <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
-              <p className="text-sm font-medium text-orange-800 mb-2">டெமோ நற்சான்றிதழ்கள்:</p>
+              <p className="text-sm font-medium text-orange-800 mb-2">{t('demo.credentials')}</p>
               <div className="space-y-1 text-xs text-orange-700">
-                <div><Badge variant="outline" className="text-xs mr-2 border-orange-300">குடிமகன்</Badge>family@demo.com</div>
-                <p className="text-orange-600">கடவுச்சொல்: demo123</p>
+                <div><Badge variant="outline" className="text-xs mr-2 border-orange-300">{t('citizen')}</Badge>family@demo.com</div>
+                <p className="text-orange-600">Password: demo123</p>
               </div>
             </div>
           </CardContent>
