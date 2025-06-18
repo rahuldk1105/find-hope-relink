@@ -67,7 +67,12 @@ export type Database = {
       }
       scan_attempts: {
         Row: {
+          action: string | null
           confidence: number | null
+          estimated_age: number | null
+          found_location: string | null
+          found_person_name: string | null
+          found_time: string | null
           id: string
           matched_person_id: string | null
           police_id: string
@@ -75,7 +80,12 @@ export type Database = {
           timestamp: string | null
         }
         Insert: {
+          action?: string | null
           confidence?: number | null
+          estimated_age?: number | null
+          found_location?: string | null
+          found_person_name?: string | null
+          found_time?: string | null
           id?: string
           matched_person_id?: string | null
           police_id: string
@@ -83,7 +93,12 @@ export type Database = {
           timestamp?: string | null
         }
         Update: {
+          action?: string | null
           confidence?: number | null
+          estimated_age?: number | null
+          found_location?: string | null
+          found_person_name?: string | null
+          found_time?: string | null
           id?: string
           matched_person_id?: string | null
           police_id?: string
