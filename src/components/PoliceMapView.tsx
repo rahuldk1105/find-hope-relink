@@ -23,6 +23,7 @@ interface MissingPerson {
 const PoliceMapView = () => {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<MissingPerson | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   // Fetch missing persons with location data
   const { data: missingPersons = [] } = useQuery({
@@ -42,20 +43,24 @@ const PoliceMapView = () => {
 
   // Initialize Google Map
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.google) {
+    if (typeof window !== 'undefined' && window.google && window.google.maps) {
       initializeMap();
+      setMapLoaded(true);
     } else {
       // Load Google Maps if not already loaded
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dOMD0C1dMj5v3I&libraries=visualization&callback=initMap`;
       script.async = true;
-      window.initMap = initializeMap;
+      window.initMap = () => {
+        initializeMap();
+        setMapLoaded(true);
+      };
       document.head.appendChild(script);
     }
   }, [missingPersons]);
 
   const initializeMap = () => {
-    if (!window.google) return;
+    if (!window.google || !window.google.maps) return;
 
     // Center on Tamil Nadu
     const map = new window.google.maps.Map(document.getElementById('police-map')!, {
@@ -193,12 +198,14 @@ const PoliceMapView = () => {
             style={{ minHeight: '400px' }}
           >
             {/* Fallback content while map loads */}
-            <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">வரைபடம் ஏற்றப்படுகிறது...</p>
+            {!mapLoaded && (
+              <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500">வரைபடம் ஏற்றப்படுகிறது...</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
