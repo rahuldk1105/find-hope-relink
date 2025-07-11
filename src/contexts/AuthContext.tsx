@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -48,46 +50,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
-    // Sign up without email verification
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          phone,
-          role: 'relative'
+    console.log('SignUp attempt for:', email);
+    
+    try {
+      // Sign up with email redirect
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            name,
+            phone,
+            role: 'relative'
+          }
+        }
+      });
+
+      console.log('SignUp response:', { data: data?.user?.email, error });
+
+      if (!error && data.user) {
+        // Create user profile
+        console.log('Creating user profile for:', data.user.id);
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert([{
+            id: data.user.id,
+            name,
+            email,
+            phone: phone || null,
+            role: 'relative'
+          }]);
+        
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+        } else {
+          console.log('User profile created successfully');
         }
       }
-    });
 
-    if (!error && data.user) {
-      // Create user profile immediately since no email verification is required
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([{
-          id: data.user.id,
-          name,
-          email,
-          phone,
-          role: 'relative'
-        }]);
-      
-      if (profileError) console.error('Profile creation error:', profileError);
+      return { error };
+    } catch (err: any) {
+      console.error('SignUp unexpected error:', err);
+      return { error: err };
     }
-
-    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    return { error };
+    console.log('SignIn attempt for:', email);
+    
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      console.log('SignIn response error:', error);
+      return { error };
+    } catch (err: any) {
+      console.error('SignIn unexpected error:', err);
+      return { error: err };
+    }
   };
 
   const signOut = async () => {
+    console.log('SignOut attempt');
     await supabase.auth.signOut();
   };
 

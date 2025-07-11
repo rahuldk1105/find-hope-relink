@@ -29,20 +29,43 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("Login attempt for:", formData.email);
+    
+    if (!formData.email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Email is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.password) {
+      toast({
+        title: "Validation Error", 
+        description: "Password is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error } = await signIn(formData.email, formData.password);
       
       if (error) {
+        console.error("Login error:", error);
         toast({
           title: t('login.failed'),
-          description: error.message,
+          description: error.message || "Invalid login credentials",
           variant: "destructive"
         });
         return;
       }
 
+      console.log("Login successful");
       toast({
         title: t('login.successful'),
         description: t('welcome.to.relink')
@@ -50,6 +73,7 @@ const Login = () => {
       
       navigate('/relative-dashboard');
     } catch (error: any) {
+      console.error("Unexpected login error:", error);
       toast({
         title: t('login.failed'),
         description: "Unexpected error occurred",
@@ -68,6 +92,7 @@ const Login = () => {
             variant="ghost" 
             onClick={() => navigate('/')}
             className="text-gray-600 hover:text-gray-800"
+            disabled={loading}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
@@ -107,6 +132,7 @@ const Login = () => {
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder={t('enter.email')}
                   required
+                  disabled={loading}
                   className="border-orange-200 focus:border-orange-400"
                 />
               </div>
@@ -120,6 +146,7 @@ const Login = () => {
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   placeholder={t('enter.password')}
                   required
+                  disabled={loading}
                   className="border-orange-200 focus:border-orange-400"
                 />
               </div>
@@ -139,8 +166,9 @@ const Login = () => {
               </p>
               <Button 
                 variant="outline" 
-                onClick={() => navigate('/role-select')}
+                onClick={() => navigate('/relative-register')}
                 className="w-full border-orange-200 hover:bg-orange-50"
+                disabled={loading}
               >
                 {t('create.new.account')}
               </Button>

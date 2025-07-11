@@ -29,6 +29,45 @@ const RelativeRegister = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("Form submitted with data:", { ...formData, password: "[HIDDEN]", confirmPassword: "[HIDDEN]" });
+    
+    // Validation
+    if (!formData.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      toast({
+        title: "Validation Error", 
+        description: "Email is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.password) {
+      toast({
+        title: "Validation Error",
+        description: "Password is required", 
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast({
+        title: "Validation Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Password Mismatch",
@@ -40,23 +79,35 @@ const RelativeRegister = () => {
 
     setLoading(true);
     
-    const { error } = await signUp(formData.email, formData.password, formData.name, formData.phone);
-    
-    if (error) {
+    try {
+      console.log("Attempting to sign up user...");
+      const { error } = await signUp(formData.email, formData.password, formData.name, formData.phone);
+      
+      if (error) {
+        console.error("Registration error:", error);
+        toast({
+          title: "Registration Failed",
+          description: error.message || "An error occurred during registration",
+          variant: "destructive"
+        });
+      } else {
+        console.log("Registration successful");
+        toast({
+          title: "Registration Successful",
+          description: "Your account has been created successfully!",
+        });
+        navigate('/login');
+      }
+    } catch (error: any) {
+      console.error("Unexpected registration error:", error);
       toast({
         title: "Registration Failed",
-        description: error.message,
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
-    } else {
-      toast({
-        title: "Registration Successful",
-        description: "Please check your email to confirm your account.",
-      });
-      navigate('/login');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
@@ -102,6 +153,7 @@ const RelativeRegister = () => {
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="Enter your full name"
                   required
+                  disabled={loading}
                 />
               </div>
 
@@ -114,6 +166,7 @@ const RelativeRegister = () => {
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="Enter your email"
                   required
+                  disabled={loading}
                 />
               </div>
 
@@ -125,6 +178,7 @@ const RelativeRegister = () => {
                   value={formData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   placeholder="Enter your phone number"
+                  disabled={loading}
                 />
               </div>
 
@@ -135,8 +189,10 @@ const RelativeRegister = () => {
                   type="password"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  placeholder="Create a password"
+                  placeholder="Create a password (min 6 characters)"
                   required
+                  disabled={loading}
+                  minLength={6}
                 />
               </div>
 
@@ -149,6 +205,8 @@ const RelativeRegister = () => {
                   onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                   placeholder="Confirm your password"
                   required
+                  disabled={loading}
+                  minLength={6}
                 />
               </div>
 
@@ -169,6 +227,7 @@ const RelativeRegister = () => {
                 variant="outline" 
                 onClick={() => navigate('/login')}
                 className="w-full border-blue-200 hover:bg-blue-50"
+                disabled={loading}
               >
                 Sign In
               </Button>
