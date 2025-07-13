@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { FacialRecognitionStatus } from "@/components/FacialRecognitionStatus";
 
 interface MissingPerson {
   id: string;
@@ -194,6 +195,20 @@ const MyReports = () => {
                         </p>
                         <p className="text-sm text-gray-600">Last seen: {report.last_seen_location}</p>
                         <p className="text-xs text-gray-500">Reported: {formatDate(report.created_at)}</p>
+                        
+                        {/* Show facial recognition status only for missing persons with photos */}
+                        {report.status === 'missing' && report.photo_url && (
+                          <div className="mt-2">
+                            <FacialRecognitionStatus 
+                              missingPersonId={report.id}
+                              imageUrl={report.photo_url}
+                              onComplete={() => {
+                                // Optionally refresh the reports after recognition completes
+                                console.log('Facial recognition completed for', report.name);
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
