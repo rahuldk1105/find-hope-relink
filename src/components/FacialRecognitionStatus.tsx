@@ -37,6 +37,7 @@ export const FacialRecognitionStatus = ({
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('FacialRecognitionStatus component mounted with:', { missingPersonId, imageUrl });
     startFacialRecognition();
   }, [missingPersonId, imageUrl]);
 

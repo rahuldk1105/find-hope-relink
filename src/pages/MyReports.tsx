@@ -197,7 +197,18 @@ const MyReports = () => {
                         <p className="text-xs text-gray-500">Reported: {formatDate(report.created_at)}</p>
                         
                         {/* Show facial recognition status only for missing persons with photos */}
-                        {report.status === 'missing' && report.photo_url && (
+                        {(() => {
+                          const shouldShow = report.status === 'missing' && report.photo_url;
+                          console.log('Facial recognition check for report:', {
+                            reportId: report.id,
+                            name: report.name,
+                            status: report.status,
+                            hasPhoto: !!report.photo_url,
+                            photoUrl: report.photo_url,
+                            shouldShow
+                          });
+                          return shouldShow;
+                        })() && (
                           <div className="mt-2">
                             <FacialRecognitionStatus 
                               missingPersonId={report.id}
