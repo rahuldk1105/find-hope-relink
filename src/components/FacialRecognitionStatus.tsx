@@ -102,7 +102,7 @@ export const FacialRecognitionStatus = ({
     switch (status) {
       case 'running':
         return (
-          <div className="flex items-center space-x-2 text-blue-600">
+          <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span className="text-sm font-medium">Running facial match...</span>
           </div>
@@ -122,16 +122,16 @@ export const FacialRecognitionStatus = ({
           );
         } else {
           return (
-            <Badge variant="secondary" className="bg-gray-100 text-gray-700">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              Scan Complete - No matches
-            </Badge>
+            <div className="flex items-center space-x-2 text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-sm">Scan Complete - No matches</span>
+            </div>
           );
         }
       
       case 'error':
         return (
-          <div className="flex items-center space-x-2 text-red-600">
+          <div className="flex items-center space-x-2 text-red-600 bg-red-50 px-3 py-2 rounded-lg">
             <AlertCircle className="h-4 w-4" />
             <span className="text-sm">Recognition failed</span>
             <Button 
@@ -152,14 +152,12 @@ export const FacialRecognitionStatus = ({
 
   return (
     <>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        {renderStatus()}
-        {status === 'completed' && (
-          <p className="text-xs text-gray-600 mt-1">
-            Scanned {totalScanned} images in database
-          </p>
-        )}
-      </div>
+      {renderStatus()}
+      {status === 'completed' && totalScanned > 0 && (
+        <p className="text-xs text-gray-600 mt-1">
+          Scanned {totalScanned} images in database
+        </p>
+      )}
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-2xl">
