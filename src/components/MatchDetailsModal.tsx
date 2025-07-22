@@ -84,26 +84,6 @@ export const MatchDetailsModal = ({
             </div>
           </div>
 
-          {/* Additional Matches */}
-          {matches.length > 1 && (
-            <div className="space-y-3">
-              <h4 className="text-md font-medium">Additional Potential Matches</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {matches.slice(1).map((match, index) => (
-                  <div key={index} className="space-y-2">
-                    <img 
-                      src={match.matchedImageUrl} 
-                      alt={`Match ${index + 2}`} 
-                      className="w-full h-20 object-cover rounded border"
-                    />
-                    <Badge variant="outline" className="text-xs">
-                      {match.confidence.toFixed(1)}%
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Info */}
           <div className="bg-blue-50 p-4 rounded-lg">
