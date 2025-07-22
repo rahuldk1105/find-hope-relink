@@ -25,6 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { ImageMatchingStatus } from "@/components/ImageMatchingStatus";
 
 const RelativeDashboard = () => {
   const navigate = useNavigate();
@@ -249,10 +250,22 @@ const RelativeDashboard = () => {
                             <MapPin className="w-3 h-3 mr-1" />
                             {report.last_seen_location}
                           </p>
-                          <p className="text-xs text-gray-500 flex items-center">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {new Date(report.created_at).toLocaleDateString('ta-IN')}
-                          </p>
+                           <p className="text-xs text-gray-500 flex items-center">
+                             <Clock className="w-3 h-3 mr-1" />
+                             {new Date(report.created_at).toLocaleDateString('ta-IN')}
+                           </p>
+                           
+                           {/* Image matching status - only for missing persons with photos */}
+                           {report.status === 'missing' && report.photo_url && (
+                             <div className="mt-2">
+                               <ImageMatchingStatus 
+                                 missingPersonId={report.id}
+                                 onComplete={() => {
+                                   console.log('Image matching completed for', report.name);
+                                 }}
+                               />
+                             </div>
+                           )}
                         </div>
                         <Badge className={`${getStatusColor(report.status)} text-white`}>
                           {getStatusText(report.status)}
@@ -324,9 +337,21 @@ const RelativeDashboard = () => {
                                     கடைசியாக பார்க்கப்பட்ட இடம்: {report.last_seen_location}
                                   </p>
                                   <p className="text-sm text-gray-500 flex items-center mt-1">
-                                    <Clock className="w-4 h-4 mr-1" />
-                                    அறிவிக்கப்பட்ட தேதி: {new Date(report.created_at).toLocaleDateString('ta-IN')}
-                                  </p>
+                                     <Clock className="w-4 h-4 mr-1" />
+                                     அறிவிக்கப்பட்ட தேதி: {new Date(report.created_at).toLocaleDateString('ta-IN')}
+                                   </p>
+                                   
+                                   {/* Image matching status in the my-reports tab */}
+                                   {report.status === 'missing' && report.photo_url && (
+                                     <div className="mt-2">
+                                       <ImageMatchingStatus 
+                                         missingPersonId={report.id}
+                                         onComplete={() => {
+                                           console.log('Image matching completed for', report.name);
+                                         }}
+                                       />
+                                     </div>
+                                   )}
                                   {report.health_conditions && (
                                     <p className="text-sm text-gray-600 mt-2">
                                       <strong>உடல்நிலை:</strong> {report.health_conditions}

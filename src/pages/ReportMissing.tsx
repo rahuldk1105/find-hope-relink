@@ -15,7 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 import LocationPicker from "@/components/LocationPicker";
 import PhotoUpload from "@/components/PhotoUpload";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { FacialRecognitionStatus } from "@/components/FacialRecognitionStatus";
 
 type GenderType = "male" | "female" | "other";
 type StatusType = "missing" | "found";
@@ -39,9 +38,6 @@ const ReportMissing = () => {
     description: "",
     photos: [] as File[]
   });
-  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
-  const [missingPersonId, setMissingPersonId] = useState<string | null>(null);
-  const [showFacialRecognition, setShowFacialRecognition] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -133,22 +129,12 @@ const ReportMissing = () => {
 
       console.log('Successfully inserted:', data);
 
-      // Set the missing person ID and photo URL for facial recognition
-      setMissingPersonId(data.id);
-      if (primaryPhotoUrl) {
-        setUploadedPhotoUrl(primaryPhotoUrl);
-        setShowFacialRecognition(true);
-      }
-
       toast({
         title: t('report.submitted.success'),
         description: t('report.registered'),
       });
       
-      // Don't navigate immediately if facial recognition is starting
-      if (!primaryPhotoUrl) {
-        navigate('/relative-dashboard');
-      }
+      navigate('/relative-dashboard');
     } catch (error: any) {
       console.error('Error submitting report:', error);
       toast({
@@ -228,21 +214,6 @@ const ReportMissing = () => {
                       required
                       className="border-orange-200 focus:border-orange-400"
                     />
-                    
-                    {/* Facial Recognition Status - shown after form submission */}
-                    {showFacialRecognition && missingPersonId && uploadedPhotoUrl && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <p className="text-sm font-medium text-blue-800 mb-2">Facial Recognition Analysis</p>
-                        <FacialRecognitionStatus
-                          missingPersonId={missingPersonId}
-                          imageUrl={uploadedPhotoUrl}
-                          onComplete={() => {
-                            setShowFacialRecognition(false);
-                            navigate('/relative-dashboard');
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
                   
                   <div className="space-y-2">
