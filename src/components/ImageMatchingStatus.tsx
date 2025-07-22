@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Search, CheckCircle, AlertCircle } from 'lucide-react';
+import { MatchDetailsModal } from './MatchDetailsModal';
 
 interface ImageMatchingStatusProps {
   missingPersonId: string;
@@ -25,6 +26,9 @@ export const ImageMatchingStatus = ({ missingPersonId, onComplete }: ImageMatchi
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [totalScanned, setTotalScanned] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [showModal, setShowModal] = useState(false);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string>('');
+  const [missingPersonName, setMissingPersonName] = useState<string>('');
 
   useEffect(() => {
     performImageMatching();
@@ -34,10 +38,10 @@ export const ImageMatchingStatus = ({ missingPersonId, onComplete }: ImageMatchi
     try {
       setStatus('running');
       
-      // Get the missing person's photo URL
+      // Get the missing person's photo URL and name
       const { data: missingPerson, error: fetchError } = await supabase
         .from('missing_persons')
-        .select('photo_url')
+        .select('photo_url, name')
         .eq('id', missingPersonId)
         .single();
 
@@ -46,6 +50,10 @@ export const ImageMatchingStatus = ({ missingPersonId, onComplete }: ImageMatchi
         setErrorMessage('Could not find photo for comparison');
         return;
       }
+
+      // Store the original image URL and name for the modal
+      setOriginalImageUrl(missingPerson.photo_url);
+      setMissingPersonName(missingPerson.name);
 
       // Call the image matching edge function
       const { data, error } = await supabase.functions.invoke('image-matching', {
@@ -130,18 +138,35 @@ export const ImageMatchingStatus = ({ missingPersonId, onComplete }: ImageMatchi
   const statusDisplay = getStatusDisplay();
 
   return (
-    <div className={`p-3 rounded-lg border ${statusDisplay.bgColor} ${statusDisplay.borderColor}`}>
-      <div className="flex items-center space-x-2">
-        {statusDisplay.icon}
-        <span className={`text-sm font-medium ${statusDisplay.textColor}`}>
-          {statusDisplay.text}
-        </span>
-      </div>
-      {matches.length > 0 && (
-        <div className="mt-2 text-xs text-green-700">
-          Images compared between missing-person-photos and dataset-images buckets
+    <>
+      <div 
+        className={`p-3 rounded-lg border ${statusDisplay.bgColor} ${statusDisplay.borderColor} ${
+          status === 'completed' && matches.length > 0 
+            ? 'cursor-pointer hover:shadow-md transition-shadow' 
+            : ''
+        }`}
+        onClick={status === 'completed' && matches.length > 0 ? () => setShowModal(true) : undefined}
+      >
+        <div className="flex items-center space-x-2">
+          {statusDisplay.icon}
+          <span className={`text-sm font-medium ${statusDisplay.textColor}`}>
+            {statusDisplay.text}
+          </span>
         </div>
-      )}
-    </div>
+        {matches.length > 0 && (
+          <div className="mt-2 text-xs text-green-700">
+            Images compared between missing-person-photos and dataset-images buckets
+          </div>
+        )}
+      </div>
+      
+      <MatchDetailsModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        originalImageUrl={originalImageUrl}
+        matches={matches}
+        missingPersonName={missingPersonName}
+      />
+    </>
   );
 };
