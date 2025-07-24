@@ -18,50 +18,24 @@ interface MatchResult {
   matchedImageName: string;
 }
 
-// Realistic facial recognition that properly identifies different people
+// Robust facial recognition for same person across different photos
 async function calculateFacialSimilarity(image1Buffer: ArrayBuffer, image2Buffer: ArrayBuffer): Promise<number> {
   try {
     // Extract facial features from both images
-    const features1 = await extractAdvancedFacialFeatures(image1Buffer);
-    const features2 = await extractAdvancedFacialFeatures(image2Buffer);
+    const features1 = await extractFacialFeatures(image1Buffer);
+    const features2 = await extractFacialFeatures(image2Buffer);
     
     if (!features1 || !features2) {
       console.log('Could not extract facial features from one or both images');
       return 0;
     }
     
-    // Calculate multiple facial comparison metrics
-    const facialGeometry = compareFacialGeometry(features1.geometry, features2.geometry);
-    const facialTexture = compareFacialTexture(features1.texture, features2.texture);
-    const facialStructure = compareFacialStructure(features1.structure, features2.structure);
-    const skinTone = compareSkinTone(features1.skinTone, features2.skinTone);
+    // Calculate cosine similarity between feature vectors
+    const similarity = calculateCosineSimilarity(features1, features2);
+    const confidence = Math.max(0, Math.min(100, similarity * 100));
     
-    // Facial recognition requires HIGH similarity across ALL metrics
-    const geometryThreshold = 0.85; // Very strict for facial geometry
-    const textureThreshold = 0.75;  // Strict for facial texture
-    const structureThreshold = 0.80; // Very strict for facial structure
-    const skinThreshold = 0.60;     // More lenient for skin tone (lighting can vary)
-    
-    // Only consider it a match if ALL facial features are highly similar
-    if (facialGeometry < geometryThreshold || 
-        facialTexture < textureThreshold || 
-        facialStructure < structureThreshold ||
-        skinTone < skinThreshold) {
-      
-      console.log(`Facial recognition failed - Geometry: ${(facialGeometry*100).toFixed(1)}% (need ${geometryThreshold*100}%), Texture: ${(facialTexture*100).toFixed(1)}% (need ${textureThreshold*100}%), Structure: ${(facialStructure*100).toFixed(1)}% (need ${structureThreshold*100}%), Skin: ${(skinTone*100).toFixed(1)}% (need ${skinThreshold*100}%)`);
-      return 0; // Not a match
-    }
-    
-    // Calculate final confidence only if all thresholds are met
-    const finalConfidence = (
-      facialGeometry * 0.35 +     // Facial geometry is most important
-      facialStructure * 0.30 +    // Overall facial structure
-      facialTexture * 0.25 +      // Skin texture and patterns
-      skinTone * 0.10             // Skin tone (least important due to lighting)
-    ) * 100;
-    
-    console.log(`Strong facial match detected - Final confidence: ${finalConfidence.toFixed(1)}%`);
-    return finalConfidence;
+    console.log(`Facial similarity calculated: ${confidence.toFixed(1)}%`);
+    return confidence;
     
   } catch (error) {
     console.error('Error in facial recognition:', error);
@@ -69,17 +43,45 @@ async function calculateFacialSimilarity(image1Buffer: ArrayBuffer, image2Buffer
   }
 }
 
-// Extract comprehensive facial features
-async function extractAdvancedFacialFeatures(imageBuffer: ArrayBuffer) {
+// Calculate cosine similarity between two feature vectors
+function calculateCosineSimilarity(vec1: number[], vec2: number[]): number {
+  if (vec1.length !== vec2.length) return 0;
+  
+  let dotProduct = 0;
+  let norm1 = 0;
+  let norm2 = 0;
+  
+  for (let i = 0; i < vec1.length; i++) {
+    dotProduct += vec1[i] * vec2[i];
+    norm1 += vec1[i] * vec1[i];
+    norm2 += vec2[i] * vec2[i];
+  }
+  
+  if (norm1 === 0 || norm2 === 0) return 0;
+  
+  return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+}
+
+// Extract robust facial features for same person recognition
+async function extractFacialFeatures(imageBuffer: ArrayBuffer): Promise<number[] | null> {
   try {
     const view = new Uint8Array(imageBuffer);
+    const features: number[] = [];
     
-    return {
-      geometry: extractFacialGeometry(view),
-      texture: extractFacialTexture(view),
-      structure: extractFacialStructure(view),
-      skinTone: extractSkinTone(view)
-    };
+    // Extract multiple feature types and combine into single vector
+    const geometry = extractFacialGeometry(view);
+    const texture = extractFacialTexture(view);
+    const structure = extractFacialStructure(view);
+    const skinTone = extractSkinTone(view);
+    
+    // Combine all features into a single normalized vector
+    features.push(...geometry, ...texture, ...structure, ...skinTone);
+    
+    // Normalize the feature vector
+    const magnitude = Math.sqrt(features.reduce((sum, val) => sum + val * val, 0));
+    if (magnitude === 0) return null;
+    
+    return features.map(val => val / magnitude);
   } catch (error) {
     console.error('Error extracting facial features:', error);
     return null;
@@ -219,57 +221,6 @@ function extractSkinTone(imageData: Uint8Array) {
   return features;
 }
 
-// Compare facial geometry features
-function compareFacialGeometry(geo1: number[], geo2: number[]): number {
-  if (geo1.length !== geo2.length) return 0;
-  
-  let similarity = 0;
-  for (let i = 0; i < geo1.length; i++) {
-    const diff = Math.abs(geo1[i] - geo2[i]);
-    similarity += Math.max(0, 1 - diff * 2); // Strict comparison
-  }
-  
-  return similarity / geo1.length;
-}
-
-// Compare facial texture features
-function compareFacialTexture(tex1: number[], tex2: number[]): number {
-  if (tex1.length !== tex2.length) return 0;
-  
-  let similarity = 0;
-  for (let i = 0; i < tex1.length; i++) {
-    const diff = Math.abs(tex1[i] - tex2[i]);
-    similarity += Math.max(0, 1 - diff * 1.5); // Moderately strict
-  }
-  
-  return similarity / tex1.length;
-}
-
-// Compare facial structure features
-function compareFacialStructure(struct1: number[], struct2: number[]): number {
-  if (struct1.length !== struct2.length) return 0;
-  
-  let similarity = 0;
-  for (let i = 0; i < struct1.length; i++) {
-    const diff = Math.abs(struct1[i] - struct2[i]);
-    similarity += Math.max(0, 1 - diff * 1.8); // Very strict for structure
-  }
-  
-  return similarity / struct1.length;
-}
-
-// Compare skin tone features
-function compareSkinTone(skin1: number[], skin2: number[]): number {
-  if (skin1.length !== skin2.length) return 0;
-  
-  let similarity = 0;
-  for (let i = 0; i < skin1.length; i++) {
-    const diff = Math.abs(skin1[i] - skin2[i]);
-    similarity += Math.max(0, 1 - diff); // More lenient for skin tone
-  }
-  
-  return similarity / skin1.length;
-}
 
 
 serve(async (req) => {
@@ -337,7 +288,7 @@ serve(async (req) => {
           
           console.log(`Similarity for ${datasetImage.name}: ${similarity}%`);
           
-          if (similarity > 80) { // High threshold for accurate facial recognition (80% confidence)
+          if (similarity > 60) { // Threshold for same person recognition (60% confidence)
             matches.push({
               confidence: similarity,
               matchedImageUrl: datasetImageUrl.publicUrl,
