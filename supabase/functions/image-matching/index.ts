@@ -311,14 +311,49 @@ serve(async (req) => {
       const bestMatch = matches[0];
       
       try {
+        // Store the missing person image in scan-images bucket when match is found
+        const fileName = `match_${missingPersonId}_${Date.now()}.jpg`;
+        let scanImageUrl = imageUrl;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('scan-images')
+          .upload(fileName, missingPersonBlob, {
+            contentType: 'image/jpeg',
+            upsert: false
+          });
+          
+        if (uploadError) {
+          console.error('Error uploading to scan-images bucket:', uploadError);
+        } else {
+          console.log(`Successfully uploaded matched image to scan-images: ${fileName}`);
+          // Get the public URL of the uploaded image
+          const { data: publicUrlData } = supabase.storage
+            .from('scan-images')
+            .getPublicUrl(fileName);
+          scanImageUrl = publicUrlData.publicUrl;
+        }
+
+        // Create system user for automated scans if it doesn't exist
+        const systemUserId = '00000000-0000-0000-0000-000000000001';
+        
+        // Attempt to create system user (will be ignored if exists due to RLS)
+        await supabase
+          .from('users')
+          .upsert({
+            id: systemUserId,
+            name: 'System Scanner',
+            email: 'system@facial-recognition.ai',
+            role: 'police'
+          }, { onConflict: 'id' });
+
         // Create a scan attempt record for the best match
         const { error: scanError } = await supabase
           .from('scan_attempts')
           .insert({
-            police_id: '00000000-0000-0000-0000-000000000000', // System scan
+            police_id: systemUserId,
             matched_person_id: missingPersonId,
             confidence: bestMatch.confidence,
-            scan_image_url: imageUrl,
+            scan_image_url: scanImageUrl,
             action: 'automated_image_match',
             found_location: 'Dataset Match',
             found_person_name: 'Automated Image Recognition'
@@ -328,25 +363,6 @@ serve(async (req) => {
           console.error('Error creating scan attempt:', scanError);
         } else {
           console.log('Successfully created scan attempt record');
-          
-          // Store the missing person image in scan-images bucket when match is found
-          try {
-            const fileName = `match_${missingPersonId}_${Date.now()}.jpg`;
-            const { error: uploadError } = await supabase.storage
-              .from('scan-images')
-              .upload(fileName, missingPersonBlob, {
-                contentType: 'image/jpeg',
-                upsert: false
-              });
-              
-            if (uploadError) {
-              console.error('Error uploading to scan-images bucket:', uploadError);
-            } else {
-              console.log(`Successfully uploaded matched image to scan-images: ${fileName}`);
-            }
-          } catch (uploadErr) {
-            console.error('Error during image upload:', uploadErr);
-          }
         }
       } catch (error) {
         console.error('Error storing scan results:', error);
