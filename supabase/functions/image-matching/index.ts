@@ -240,6 +240,14 @@ serve(async (req) => {
     console.log(`Starting image matching for missing person: ${missingPersonId}`);
     console.log(`Missing person image URL: ${imageUrl}`);
 
+    // Download the missing person image for processing first
+    const missingPersonResponse = await fetch(imageUrl);
+    if (!missingPersonResponse.ok) {
+      throw new Error(`Failed to download missing person image: ${missingPersonResponse.statusText}`);
+    }
+    const missingPersonBlob = await missingPersonResponse.blob();
+    const missingPersonBuffer = await missingPersonBlob.arrayBuffer();
+
     // Get all images from the dataset-images bucket to compare against
     const { data: datasetImages, error: datasetError } = await supabase.storage
       .from('dataset-images')
@@ -256,14 +264,6 @@ serve(async (req) => {
     
     if (datasetImages && datasetImages.length > 0) {
       console.log(`Processing image matching for ${datasetImages.length} dataset images`);
-      
-      // Download the missing person image for processing
-      const missingPersonResponse = await fetch(imageUrl);
-      if (!missingPersonResponse.ok) {
-        throw new Error(`Failed to download missing person image: ${missingPersonResponse.statusText}`);
-      }
-      const missingPersonBlob = await missingPersonResponse.blob();
-      const missingPersonBuffer = await missingPersonBlob.arrayBuffer();
       
       console.log('Downloaded missing person image for comparison');
       
